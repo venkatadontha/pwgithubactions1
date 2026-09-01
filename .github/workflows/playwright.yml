@@ -1,11 +1,13 @@
 ﻿name: Playwright Tests
 
 on:
-  push:
-    branches: [ main, master ]
-
-  pull_request:
-    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      headed:
+        description: 'Run Playwright in headed mode'
+        required: true
+        default: false
+        type: boolean
 
 jobs:
   test:
@@ -22,14 +24,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright Chromium
+      - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run Playwright tests on Chrome
-        run: npx playwright test --project=chrome
+      - name: Run Playwright tests
+        run: |
+          if [ "${{ inputs.headed }}" = "true" ]; then
+            xvfb-run npx playwright test --project=chromium --headed
+          else
+            npx playwright test --project=chromium
+          fi
 
-      - name: Upload Playwright Report
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
